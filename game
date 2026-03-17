@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>フジワラ・クラフト - クリック＆クラフト</title>
+    <style>
+        /* 全体の設定 */
+        :root {
+            --bg-color: #3f3f3f; /* 地下洞窟のような背景 */
+            --text-color: #e0e0e0;
+            --main-color: #6a9955; /* 草ブロックのような緑 */
+            --accent-color: #a7a7a7; /* 石のような灰色 */
+            --border-color: #2a2a2a; /* ブロックの境目 */
+            --font-pixel: 'Press Start 2P', cursive; /* ピクセルフォント */
+        }
+
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        body {
+            margin: 0;
+            font-family: var(--font-pixel), monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+            flex-direction: column;
+            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect x="0" y="0" width="16" height="16" fill="rgba(255,255,255,0.7)"/></svg>') 8 8, auto; /* 四角いカーソル */
+            user-select: none; /* テキスト選択防止 */
+        }
+
+        /* ゲームコンテナ */
+        .game-container {
+            display: grid;
+            grid-template-columns: 2fr 1fr; /* ゲーム画面とインベントリ */
+            gap: 20px;
+            background-color: #4a4a4a;
+            border: 5px solid var(--border-color);
+            box-shadow: 10px 10px 0px var(--border-color);
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 1000px;
+            width: 95%;
+        }
+
+        /* メインゲームエリア */
+        .game-area {
+            background-color: #555;
+            border: 3px solid var(--border-color);
+            padding: 20px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-around;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .game-area h2 {
+            font-size: 1.5em;
+            color: var(--main-color);
+            text-shadow: 2px 2px 0px var(--border-color);
+            margin-bottom: 20px;
+        }
+
+        /* 鉱石ブロック */
+        .ore-block {
+            width: 150px;
+            height: 150px;
+            background-image:
+                linear-gradient(45deg, #707070 25%, transparent 25%),
+                linear-gradient(-45deg, #707070 25%, transparent 25%),
+                linear-gradient(45deg, transparent 75%, #707070 75%),
+                linear-gradient(-45deg, transparent 75%, #707070 75%);
+            background-size: 30px 30px; /* 小さなブロックパターン */
+            background-color: #888; /* 石の色 */
+            border: 5px solid #444; /* 縁取り */
+            cursor: pointer;
+            transition: transform 0.1s ease-out;
+            position: relative;
+            box-shadow: 5px 5px 0px var(--border-color);
+            animation: breathe 3s ease-in-out infinite alternate; /* 呼吸するようなアニメーション */
+        }
+
+        .ore-block:hover {
+            transform: scale(1.05);
+        }
+
+        .ore-block:active {
+            transform: scale(0.95);
+        }
+
+        @keyframes breathe {
+            from { transform: scale(1); }
+            to { transform: scale(1.03); }
+        }
+
+        /* クリック時のエフェクト */
+        .click-effect {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            animation: clickFadeOut 0.5s forwards;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+
+        @keyframes clickFadeOut {
+            from { opacity: 1; transform: translate(-50%, -50%) scale(0); }
+            to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
+        }
+
+        /* インベントリ / クラフトエリア */
+        .inventory-area {
+            background-color: #555;
+            border: 3px solid var(--border-color);
+            padding: 20px;
+            border-radius: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .inventory-area h3 {
+            font-size: 1.2em;
+            color: var(--accent-color);
+            text-shadow: 1px 1px 0px var(--border-color);
+            margin-bottom: 10px;
+            border-bottom: 2px dashed var(--border-color);
+            padding-bottom: 5px;
+        }
+
+        .item-slot {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #3a3a3a;
+            padding: 8px 15px;
+            border: 2px solid var(--border-color);
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .crafting-menu {
+            margin-top: 20px;
+        }
+
+        .craft-button {
+            display: block;
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: var(--main-color);
+            color: var(--text-color);
+            border: 2px solid var(--border-color);
+            font-family: var(--font-pixel), monospace;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: background-color 0.1s ease, transform 0.1s ease;
+            box-shadow: 3px 3px 0px var(--border-color);
+        }
+
+        .craft-button:hover:not(:disabled) {
+            background-color: #79a665;
+            transform: translateY(-2px);
+            box-shadow: 5px 5px 0px var(--border-color);
+        }
+
+        .craft-button:disabled {
+            background-color: #666;
+            color: #aaa;
+            cursor: not-allowed;
+            box-shadow: 2px 2px 0px var(--border-color);
+        }
+
+        .craft-button span.cost {
+            font-size: 0.8em;
+            color: var(--secondary-color);
+            margin-left: 10px;
+        }
+
+        /* モバイル対応 */
+        @media (max-width: 768px) {
+            .game-container {
+                grid-template-columns: 1fr;
+                padding: 15px;
+                gap: 15px;
+            }
+            .ore-block {
+                width: 120px;
+                height: 120px;
+            }
+            .game-area h2 {
+                font-size: 1.2em;
+            }
+            .inventory-area h3 {
+                font-size: 1em;
+            }
+            .item-slot, .craft-button {
+                font-size: 0.8em;
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <div class="game-area">
+            <h2>地底鉱脈</h2>
+            <div id="oreBlock" class="ore-block"></div>
+            <p>ストーン: <span id="stoneCount">0</span></p>
+        </div>
+
+        <div class="inventory-area">
+            <h3>インベントリ</h3>
+            <div class="item-slot">
+                <span>ストーン</span>
+                <span id="invStoneCount">0</span>
+            </div>
+            <div class="item-slot">
+                <span>ピッケル</span>
+                <span id="invPickaxeCount">0</span>
+            </div>
+            <div class="item-slot">
+                <span>木材</span>
+                <span id="invWoodCount">0</span>
+            </div>
+            <div class="item-slot">
+                <span>小さな家</span>
+                <span id="invHouseCount">0</span>
+            </div>
+
+            <div class="crafting-menu">
+                <h3>クラフト</h3>
+                <button id="craftPickaxe" class="craft-button" data-item="pickaxe" data-cost-stone="10">ピッケルをクラフト <span class="cost">(ストーン: 10)</span></button>
+                <button id="craftWood" class="craft-button" data-item="wood" data-cost-stone="5">木材をクラフト <span class="cost">(ストーン: 5)</span></button>
+                <button id="craftHouse" class="craft-button" data-item="house" data-cost-stone="50" data-cost-wood="10" disabled>小さな家をクラフト <span class="cost">(ストーン: 50, 木材: 10)</span></button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const oreBlock = document.getElementById('oreBlock');
+        const stoneCountDisplay = document.getElementById('stoneCount');
+        const invStoneCountDisplay = document.getElementById('invStoneCount');
+        const invPickaxeCountDisplay = document.getElementById('invPickaxeCount');
+        const invWoodCountDisplay = document.getElementById('invWoodCount');
+        const invHouseCountDisplay = document.getElementById('invHouseCount');
+
+        let stone = 0;
+        let pickaxe = 0;
+        let wood = 0;
+        let house = 0;
+
+        const craftButtons = document.querySelectorAll('.craft-button');
+
+        // カウントを更新する関数
+        function updateCounts() {
+            stoneCountDisplay.textContent = stone;
+            invStoneCountDisplay.textContent = stone;
+            invPickaxeCountDisplay.textContent = pickaxe;
+            invWoodCountDisplay.textContent = wood;
+            invHouseCountDisplay.textContent = house;
+
+            // クラフトボタンの有効/無効をチェック
+            craftButtons.forEach(button => {
+                const item = button.dataset.item;
+                const costStone = parseInt(button.dataset.costStone || 0);
+                const costWood = parseInt(button.dataset.costWood || 0); // 木材のコストも追加
+
+                let canCraft = true;
+                if (stone < costStone) canCraft = false;
+                if (wood < costWood) canCraft = false; // 木材のコストもチェック
+
+                button.disabled = !canCraft;
+            });
+        }
+
+        // 鉱石ブロックをクリックした時の処理
+        oreBlock.addEventListener('click', (e) => {
+            stone += 1 + pickaxe; // ピッケルがあると獲得量が増える
+            updateCounts();
+
+            // クリックエフェクト
+            const effect = document.createElement('div');
+            effect.classList.add('click-effect');
+            effect.style.left = e.clientX - oreBlock.getBoundingClientRect().left + 'px';
+            effect.style.top = e.clientY - oreBlock.getBoundingClientRect().top + 'px';
+            oreBlock.appendChild(effect);
+            effect.addEventListener('animationend', () => {
+                effect.remove();
+            });
+        });
+
+        // クラフトボタンをクリックした時の処理
+        craftButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const item = button.dataset.item;
+                const costStone = parseInt(button.dataset.costStone || 0);
+                const costWood = parseInt(button.dataset.costWood || 0);
+
+                if (stone >= costStone && wood >= costWood) {
+                    stone -= costStone;
+                    wood -= costWood; // 木材も消費
+
+                    switch (item) {
+                        case 'pickaxe':
+                            pickaxe++;
+                            break;
+                        case 'wood':
+                            wood++;
+                            break;
+                        case 'house':
+                            house++;
+                            break;
+                    }
+                    updateCounts();
+                } else {
+                    alert('素材が足りません！');
+                }
+            });
+        });
+
+        // 初期表示を更新
+        updateCounts();
+    </script>
+</body>
+</html>
