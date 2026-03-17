@@ -3,23 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フジワラ・クラフト - クリック＆クラフト</title>
+    <title>Undertale-like Battle</title>
     <style>
         /* 全体の設定 */
         :root {
-            --bg-color: #3f3f3f; /* 地下洞窟のような背景 */
-            --text-color: #e0e0e0;
-            --main-color: #6a9955; /* 草ブロックのような緑 */
-            --accent-color: #a7a7a7; /* 石のような灰色 */
-            --border-color: #2a2a2a; /* ブロックの境目 */
-            --font-pixel: 'Press Start 2P', cursive; /* ピクセルフォント */
+            --bg-color: #000;
+            --text-color: #fff;
+            --border-color: #666;
+            --heart-color: #f00;
+            --box-color: #333;
+            --option-color: #4CAF50; /* 緑 */
+            --font-pixel: 'Press Start 2P', cursive;
         }
 
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
 
         body {
             margin: 0;
-            font-family: var(--font-pixel), monospace;
+            font-family: var(--font-pixel);
             background-color: var(--bg-color);
             color: var(--text-color);
             display: flex;
@@ -28,183 +29,214 @@
             min-height: 100vh;
             overflow: hidden;
             flex-direction: column;
-            cursor: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32"><rect x="0" y="0" width="16" height="16" fill="rgba(255,255,255,0.7)"/></svg>') 8 8, auto; /* 四角いカーソル */
-            user-select: none; /* テキスト選択防止 */
+            user-select: none;
+            text-align: center;
+            font-size: 14px;
         }
 
         /* ゲームコンテナ */
         .game-container {
-            display: grid;
-            grid-template-columns: 2fr 1fr; /* ゲーム画面とインベントリ */
-            gap: 20px;
-            background-color: #4a4a4a;
-            border: 5px solid var(--border-color);
-            box-shadow: 10px 10px 0px var(--border-color);
-            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            background-color: var(--box-color);
+            border: 4px solid var(--border-color);
             border-radius: 8px;
-            max-width: 1000px;
-            width: 95%;
-        }
-
-        /* メインゲームエリア */
-        .game-area {
-            background-color: #555;
-            border: 3px solid var(--border-color);
             padding: 20px;
-            border-radius: 5px;
+            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
+            position: relative;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-around;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .game-area h2 {
-            font-size: 1.5em;
-            color: var(--main-color);
-            text-shadow: 2px 2px 0px var(--border-color);
-            margin-bottom: 20px;
-        }
-
-        /* 鉱石ブロック */
-        .ore-block {
-            width: 150px;
-            height: 150px;
-            background-image:
-                linear-gradient(45deg, #707070 25%, transparent 25%),
-                linear-gradient(-45deg, #707070 25%, transparent 25%),
-                linear-gradient(45deg, transparent 75%, #707070 75%),
-                linear-gradient(-45deg, transparent 75%, #707070 75%);
-            background-size: 30px 30px; /* 小さなブロックパターン */
-            background-color: #888; /* 石の色 */
-            border: 5px solid #444; /* 縁取り */
-            cursor: pointer;
-            transition: transform 0.1s ease-out;
-            position: relative;
-            box-shadow: 5px 5px 0px var(--border-color);
-            animation: breathe 3s ease-in-out infinite alternate; /* 呼吸するようなアニメーション */
-        }
-
-        .ore-block:hover {
-            transform: scale(1.05);
-        }
-
-        .ore-block:active {
-            transform: scale(0.95);
-        }
-
-        @keyframes breathe {
-            from { transform: scale(1); }
-            to { transform: scale(1.03); }
-        }
-
-        /* クリック時のエフェクト */
-        .click-effect {
-            position: absolute;
-            width: 30px;
-            height: 30px;
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 50%;
-            animation: clickFadeOut 0.5s forwards;
-            pointer-events: none;
-            transform: translate(-50%, -50%);
-        }
-
-        @keyframes clickFadeOut {
-            from { opacity: 1; transform: translate(-50%, -50%) scale(0); }
-            to { opacity: 0; transform: translate(-50%, -50%) scale(1.5); }
-        }
-
-        /* インベントリ / クラフトエリア */
-        .inventory-area {
-            background-color: #555;
-            border: 3px solid var(--border-color);
-            padding: 20px;
-            border-radius: 5px;
-            display: flex;
-            flex-direction: column;
             gap: 15px;
         }
 
-        .inventory-area h3 {
-            font-size: 1.2em;
-            color: var(--accent-color);
-            text-shadow: 1px 1px 0px var(--border-color);
-            margin-bottom: 10px;
-            border-bottom: 2px dashed var(--border-color);
-            padding-bottom: 5px;
-        }
-
-        .item-slot {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background-color: #3a3a3a;
-            padding: 8px 15px;
+        /* メッセージエリア */
+        .message-box {
+            background-color: #222;
             border: 2px solid var(--border-color);
-            border-radius: 3px;
+            padding: 10px;
+            min-height: 60px;
+            width: 90%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
             font-size: 0.9em;
         }
 
-        .crafting-menu {
+        /* バトルエリア (弾幕避け) */
+        .battle-area {
+            width: 250px;
+            height: 180px;
+            background-color: var(--bg-color);
+            border: 3px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+
+        /* プレイヤーのハート */
+        .player-heart {
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: var(--heart-color);
+            transform: rotate(-45deg);
+            top: calc(50% - 8px);
+            left: calc(50% - 8px);
+        }
+        .player-heart::before, .player-heart::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            background-color: var(--heart-color);
+            border-radius: 50%;
+        }
+        .player-heart::before {
+            top: -8px;
+            left: 0;
+        }
+        .player-heart::after {
+            top: 0;
+            left: 8px;
+        }
+
+        /* 敵の弾幕 */
+        .bullet {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background-color: #fff;
+            border-radius: 50%;
+            animation: bulletFall 2s linear forwards;
+        }
+
+        @keyframes bulletFall {
+            from { transform: translateY(-20px); opacity: 1; }
+            to { transform: translateY(180px); opacity: 0; }
+        }
+
+        /* HPゲージ */
+        .hp-bar-container {
+            width: 90%;
+            background-color: #444;
+            border: 2px solid var(--border-color);
+            height: 15px;
+            margin-top: 10px;
+            position: relative;
+        }
+        .hp-bar {
+            height: 100%;
+            background-color: var(--heart-color);
+            width: 100%; /* 初期値 */
+            transition: width 0.3s ease;
+        }
+        .hp-text {
+            position: absolute;
+            top: 50%;
+            left: 10px;
+            transform: translateY(-50%);
+            color: #eee;
+            font-size: 0.8em;
+        }
+
+        /* コマンドメニュー */
+        .command-menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            width: 90%;
             margin-top: 20px;
         }
 
-        .craft-button {
-            display: block;
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            background-color: var(--main-color);
-            color: var(--text-color);
+        .command-button {
+            background-color: var(--box-color);
             border: 2px solid var(--border-color);
-            font-family: var(--font-pixel), monospace;
-            font-size: 0.9em;
+            color: var(--text-color);
+            padding: 10px 15px;
+            font-family: var(--font-pixel);
+            font-size: 0.8em;
             cursor: pointer;
-            transition: background-color 0.1s ease, transform 0.1s ease;
+            transition: background-color 0.1s ease;
             box-shadow: 3px 3px 0px var(--border-color);
         }
-
-        .craft-button:hover:not(:disabled) {
-            background-color: #79a665;
-            transform: translateY(-2px);
+        .command-button:hover {
+            background-color: #555;
             box-shadow: 5px 5px 0px var(--border-color);
         }
-
-        .craft-button:disabled {
-            background-color: #666;
-            color: #aaa;
+        .command-button:disabled {
+            background-color: #333;
+            color: #888;
             cursor: not-allowed;
             box-shadow: 2px 2px 0px var(--border-color);
         }
 
-        .craft-button span.cost {
+        /* モンスター表示 */
+        .monster-sprite {
+            width: 80px;
+            height: 80px;
+            background-color: #888; /* モンスターの仮色 */
+            border: 2px solid #555;
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 10;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             font-size: 0.8em;
-            color: var(--secondary-color);
-            margin-left: 10px;
+            color: #fff;
+        }
+
+        /* 勝利/敗北メッセージ */
+        .game-over-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            font-size: 2em;
+            z-index: 100;
+            display: none; /* 初期は非表示 */
+        }
+        .game-over-screen button {
+            background-color: var(--main-color);
+            border: 2px solid var(--border-color);
+            color: var(--text-color);
+            padding: 15px 30px;
+            font-family: var(--font-pixel);
+            font-size: 0.8em;
+            cursor: pointer;
+            margin-top: 20px;
         }
 
         /* モバイル対応 */
-        @media (max-width: 768px) {
+        @media (max-width: 600px) {
+            body {
+                font-size: 12px;
+            }
             .game-container {
-                grid-template-columns: 1fr;
-                padding: 15px;
-                gap: 15px;
-            }
-            .ore-block {
-                width: 120px;
-                height: 120px;
-            }
-            .game-area h2 {
-                font-size: 1.2em;
-            }
-            .inventory-area h3 {
-                font-size: 1em;
-            }
-            .item-slot, .craft-button {
-                font-size: 0.8em;
                 padding: 10px;
+            }
+            .battle-area {
+                width: 200px;
+                height: 150px;
+            }
+            .command-menu {
+                grid-template-columns: 1fr;
+            }
+            .monster-sprite {
+                width: 60px;
+                height: 60px;
+                top: 10px;
+                right: 10px;
             }
         }
     </style>
@@ -212,124 +244,197 @@
 <body>
 
     <div class="game-container">
-        <div class="game-area">
-            <h2>地底鉱脈</h2>
-            <div id="oreBlock" class="ore-block"></div>
-            <p>ストーン: <span id="stoneCount">0</span></p>
+        <div class="monster-sprite">敵</div>
+        <div id="messageBox" class="message-box">
+            奇妙なモンスターが現れた！
         </div>
 
-        <div class="inventory-area">
-            <h3>インベントリ</h3>
-            <div class="item-slot">
-                <span>ストーン</span>
-                <span id="invStoneCount">0</span>
-            </div>
-            <div class="item-slot">
-                <span>ピッケル</span>
-                <span id="invPickaxeCount">0</span>
-            </div>
-            <div class="item-slot">
-                <span>木材</span>
-                <span id="invWoodCount">0</span>
-            </div>
-            <div class="item-slot">
-                <span>小さな家</span>
-                <span id="invHouseCount">0</span>
-            </div>
+        <div class="hp-bar-container">
+            <div id="hpBar" class="hp-bar"></div>
+            <span class="hp-text">HP: <span id="currentHp">20</span>/<span id="maxHp">20</span></span>
+        </div>
 
-            <div class="crafting-menu">
-                <h3>クラフト</h3>
-                <button id="craftPickaxe" class="craft-button" data-item="pickaxe" data-cost-stone="10">ピッケルをクラフト <span class="cost">(ストーン: 10)</span></button>
-                <button id="craftWood" class="craft-button" data-item="wood" data-cost-stone="5">木材をクラフト <span class="cost">(ストーン: 5)</span></button>
-                <button id="craftHouse" class="craft-button" data-item="house" data-cost-stone="50" data-cost-wood="10" disabled>小さな家をクラフト <span class="cost">(ストーン: 50, 木材: 10)</span></button>
-            </div>
+        <div id="battleArea" class="battle-area">
+            <div id="playerHeart" class="player-heart"></div>
+        </div>
+
+        <div class="command-menu">
+            <button id="attackButton" class="command-button">たたかう</button>
+            <button id="actButton" class="command-button">こうどう</button>
+            <button id="itemButton" class="command-button">アイテム</button>
+            <button id="mercyButton" class="command-button">みのがす</button>
         </div>
     </div>
 
+    <div id="gameOverScreen" class="game-over-screen">
+        <p id="gameOverText"></p>
+        <button onclick="location.reload()">もういちど</button>
+    </div>
+
     <script>
-        const oreBlock = document.getElementById('oreBlock');
-        const stoneCountDisplay = document.getElementById('stoneCount');
-        const invStoneCountDisplay = document.getElementById('invStoneCount');
-        const invPickaxeCountDisplay = document.getElementById('invPickaxeCount');
-        const invWoodCountDisplay = document.getElementById('invWoodCount');
-        const invHouseCountDisplay = document.getElementById('invHouseCount');
+        const messageBox = document.getElementById('messageBox');
+        const battleArea = document.getElementById('battleArea');
+        const playerHeart = document.getElementById('playerHeart');
+        const hpBar = document.getElementById('hpBar');
+        const currentHpDisplay = document.getElementById('currentHp');
+        const maxHpDisplay = document.getElementById('maxHp');
+        const gameOverScreen = document.getElementById('gameOverScreen');
+        const gameOverText = document.getElementById('gameOverText');
 
-        let stone = 0;
-        let pickaxe = 0;
-        let wood = 0;
-        let house = 0;
+        const attackButton = document.getElementById('attackButton');
+        const actButton = document.getElementById('actButton');
+        const itemButton = document.getElementById('itemButton');
+        const mercyButton = document.getElementById('mercyButton');
 
-        const craftButtons = document.querySelectorAll('.craft-button');
+        let playerHp = 20;
+        const maxPlayerHp = 20;
+        let monsterHp = 10; // モンスターのHP (倒すことも可能に)
+        let monsterMercy = 0; // モンスターを見逃すためのポイント
+        let gameActive = true;
+        let bulletInterval;
 
-        // カウントを更新する関数
-        function updateCounts() {
-            stoneCountDisplay.textContent = stone;
-            invStoneCountDisplay.textContent = stone;
-            invPickaxeCountDisplay.textContent = pickaxe;
-            invWoodCountDisplay.textContent = wood;
-            invHouseCountDisplay.textContent = house;
+        const battleAreaRect = battleArea.getBoundingClientRect();
+        let heartX = battleAreaRect.width / 2 - 8;
+        let heartY = battleAreaRect.height / 2 - 8;
 
-            // クラフトボタンの有効/無効をチェック
-            craftButtons.forEach(button => {
-                const item = button.dataset.item;
-                const costStone = parseInt(button.dataset.costStone || 0);
-                const costWood = parseInt(button.dataset.costWood || 0); // 木材のコストも追加
+        playerHeart.style.left = heartX + 'px';
+        playerHeart.style.top = heartY + 'px';
 
-                let canCraft = true;
-                if (stone < costStone) canCraft = false;
-                if (wood < costWood) canCraft = false; // 木材のコストもチェック
-
-                button.disabled = !canCraft;
-            });
+        // HPバーの更新
+        function updateHpDisplay() {
+            hpBar.style.width = (playerHp / maxPlayerHp) * 100 + '%';
+            currentHpDisplay.textContent = playerHp;
         }
 
-        // 鉱石ブロックをクリックした時の処理
-        oreBlock.addEventListener('click', (e) => {
-            stone += 1 + pickaxe; // ピッケルがあると獲得量が増える
-            updateCounts();
+        // ゲームオーバー処理
+        function gameOver(message, isVictory = false) {
+            gameActive = false;
+            clearInterval(bulletInterval);
+            document.removeEventListener('keydown', handleKeyPress);
+            gameOverText.textContent = message;
+            gameOverScreen.style.display = 'flex';
 
-            // クリックエフェクト
-            const effect = document.createElement('div');
-            effect.classList.add('click-effect');
-            effect.style.left = e.clientX - oreBlock.getBoundingClientRect().left + 'px';
-            effect.style.top = e.clientY - oreBlock.getBoundingClientRect().top + 'px';
-            oreBlock.appendChild(effect);
-            effect.addEventListener('animationend', () => {
-                effect.remove();
+            // コマンドボタンを無効化
+            attackButton.disabled = true;
+            actButton.disabled = true;
+            itemButton.disabled = true;
+            mercyButton.disabled = true;
+        }
+
+        // 弾幕生成
+        function spawnBullet() {
+            if (!gameActive) return;
+
+            const bullet = document.createElement('div');
+            bullet.classList.add('bullet');
+            // 弾の生成位置をランダムにする
+            bullet.style.left = Math.random() * (battleAreaRect.width - 8) + 'px';
+            battleArea.appendChild(bullet);
+
+            bullet.addEventListener('animationend', () => {
+                bullet.remove();
             });
-        });
 
-        // クラフトボタンをクリックした時の処理
-        craftButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const item = button.dataset.item;
-                const costStone = parseInt(button.dataset.costStone || 0);
-                const costWood = parseInt(button.dataset.costWood || 0);
-
-                if (stone >= costStone && wood >= costWood) {
-                    stone -= costStone;
-                    wood -= costWood; // 木材も消費
-
-                    switch (item) {
-                        case 'pickaxe':
-                            pickaxe++;
-                            break;
-                        case 'wood':
-                            wood++;
-                            break;
-                        case 'house':
-                            house++;
-                            break;
-                    }
-                    updateCounts();
-                } else {
-                    alert('素材が足りません！');
+            // 弾とハートの当たり判定
+            const checkCollision = setInterval(() => {
+                if (!gameActive) {
+                    clearInterval(checkCollision);
+                    return;
                 }
-            });
+                const bulletRect = bullet.getBoundingClientRect();
+                const heartRect = playerHeart.getBoundingClientRect();
+
+                // 弾がハートの領域内にあるか
+                if (
+                    bulletRect.left < heartRect.right &&
+                    bulletRect.right > heartRect.left &&
+                    bulletRect.top < heartRect.bottom &&
+                    bulletRect.bottom > heartRect.top
+                ) {
+                    playerHp--;
+                    updateHpDisplay();
+                    bullet.remove(); // 弾が当たったら消す
+                    clearInterval(checkCollision);
+
+                    if (playerHp <= 0) {
+                        gameOver('ゲームオーバー...');
+                    }
+                }
+            }, 50); // 50msごとに当たり判定をチェック
+        }
+
+        // ハートの移動 (キーボード操作)
+        const heartSpeed = 5;
+        const handleKeyPress = (e) => {
+            if (!gameActive) return;
+
+            const battleAreaBounds = battleArea.getBoundingClientRect();
+            const heartBounds = playerHeart.getBoundingClientRect();
+
+            switch (e.key) {
+                case 'ArrowUp':
+                    heartY = Math.max(0, heartY - heartSpeed);
+                    break;
+                case 'ArrowDown':
+                    heartY = Math.min(battleAreaBounds.height - heartBounds.height, heartY + heartSpeed);
+                    break;
+                case 'ArrowLeft':
+                    heartX = Math.max(0, heartX - heartSpeed);
+                    break;
+                case 'ArrowRight':
+                    heartX = Math.min(battleAreaBounds.width - heartBounds.width, heartX + heartSpeed);
+                    break;
+            }
+            playerHeart.style.left = heartX + 'px';
+            playerHeart.style.top = heartY + 'px';
+        };
+        document.addEventListener('keydown', handleKeyPress);
+
+        // コマンドボタンのイベントリスナー
+        attackButton.addEventListener('click', () => {
+            if (!gameActive) return;
+            messageBox.textContent = 'プレイヤーはモンスターにダメージを与えた！';
+            monsterHp -= 3; // 仮のダメージ
+            if (monsterHp <= 0) {
+                gameOver('モンスターを倒した！', true);
+            }
         });
 
-        // 初期表示を更新
-        updateCounts();
+        actButton.addEventListener('click', () => {
+            if (!gameActive) return;
+            // 行動選択の例
+            messageBox.textContent = 'プレイヤーはモンスターに話しかけた。モンスターは少し困惑している。';
+            monsterMercy += 1; // 見逃すためのポイントを増やす
+        });
+
+        itemButton.addEventListener('click', () => {
+            if (!gameActive) return;
+            if (playerHp < maxPlayerHp) {
+                messageBox.textContent = 'プレイヤーは回復アイテムを使った。HPが回復した！';
+                playerHp = Math.min(maxPlayerHp, playerHp + 5); // 仮の回復量
+                updateHpDisplay();
+            } else {
+                messageBox.textContent = 'HPは満タンだ。';
+            }
+        });
+
+        mercyButton.addEventListener('click', () => {
+            if (!gameActive) return;
+            if (monsterMercy >= 3) { // 3回行動したら見逃せる
+                gameOver('モンスターを見逃した！平和な解決だ。', true);
+            } else {
+                messageBox.textContent = 'まだ見逃すことができないようだ...。';
+            }
+        });
+
+        // ゲーム開始
+        updateHpDisplay();
+        bulletInterval = setInterval(spawnBullet, 500); // 0.5秒ごとに弾を生成
+
+        // 初期メッセージ
+        setTimeout(() => {
+            messageBox.textContent = 'モンスターはあなたを見ている。';
+        }, 1500);
     </script>
 </body>
 </html>
