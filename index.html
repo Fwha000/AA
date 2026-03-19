@@ -2,191 +2,150 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>Logic Box Solver - Puzzle Game</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Growing Up Simulator</title>
     <style>
-        :root { --bg: #2c3e50; --wall: #34495e; --floor: #ecf0f1; --box: #f39c12; --target: #2ecc71; --player: #3498db; }
-        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
-        .stats { margin-bottom: 10px; font-size: 1.2rem; }
-        #game-board { display: grid; background: var(--wall); border: 4px solid var(--wall); gap: 1px; }
-        .tile { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: var(--floor); }
-        .wall { background: var(--wall); }
-        .target { background: #d5f5e3; position: relative; }
-        .target::after { content: '🎯'; font-size: 1.2rem; opacity: 0.5; }
-        .box { background: var(--box); border-radius: 5px; z-index: 1; }
-        .player { background: var(--player); border-radius: 50%; z-index: 2; transition: all 0.1s; }
-        .box-on-target { background: #27ae60; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); }
-        .controls { margin-top: 20px; color: #bdc3c7; text-align: center; }
-        .btn { padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        :root {
+            --primary: #ff7675;
+            --bg: #f5f6fa;
+            --card: #ffffff;
+            --text: #2d3436;
+        }
+        body { font-family: 'Helvetica Neue', Arial, "Hiragino Kaku Gothic ProN", "Hiragino Sans", sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; align-items: center; padding: 20px; }
+        #game-container { background: var(--card); padding: 30px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); width: 100%; max-width: 500px; text-align: center; }
+        .status-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; background: #fff5f5; padding: 15px; border-radius: 10px; }
+        .status-item { font-size: 0.9rem; font-weight: bold; }
+        .status-val { color: var(--primary); display: block; font-size: 1.2rem; }
+        #scene-image { font-size: 5rem; margin: 20px 0; }
+        #description { font-size: 1.1rem; margin-bottom: 30px; line-height: 1.6; min-height: 80px; }
+        .choice-btn { display: block; width: 100%; padding: 15px; margin-bottom: 10px; border: 2px solid var(--primary); background: white; color: var(--primary); border-radius: 10px; cursor: pointer; font-size: 1rem; font-weight: bold; transition: 0.2s; }
+        .choice-btn:hover { background: var(--primary); color: white; }
+        #restart-btn { display: none; background: #636e72; color: white; border: none; }
     </style>
 </head>
 <body>
 
-    <h1>Logic Box Solver</h1>
-    <div class="stats">Level: <span id="level">1</span> | Moves: <span id="moves">0</span></div>
+<div id="game-container">
+    <h2 id="age-display">0歳：誕生</h2>
     
-    <div id="game-board"></div>
-
-    <div class="controls">
-        <p>十字キー または WASD で移動</p>
-        <button class="btn" onclick="resetLevel()">リセット (R)</button>
-        <p id="message"></p>
+    <div class="status-grid">
+        <div class="status-item">知力<span id="stat-int" class="status-val">10</span></div>
+        <div class="status-item">体力<span id="stat-str" class="status-val">10</span></div>
+        <div class="status-item">感性<span id="stat-emot" class="status-val">10</span></div>
     </div>
 
+    <div id="scene-image">👶</div>
+    <div id="description">元気な赤ちゃんが生まれました。どんなふうに育てますか？</div>
+
+    <div id="choices-area">
+        </div>
+
+    <button id="restart-btn" class="choice-btn" onclick="location.reload()">もう一度育てる</button>
+</div>
+
 <script>
-// マップ記号: #=壁, .=床, @=プレイヤー, $=荷物, *=目的地, +=目的地上のプレイヤー, &=目的地上の荷物
-const levels = [
-    [
-        "  ##### ",
-        "###   # ",
-        "#.@$  # ",
-        "### $.# ",
-        "#.# $ # ",
-        "# # . # ",
-        "#   ### ",
-        "#####   "
-    ],
-    [
-        " #####  ",
-        " #   #  ",
-        " #$  #  ",
-        "### $## ",
-        "#  $  # ",
-        "# . . # ",
-        "####### "
-    ],
-    [
-        "    #####          ",
-        "    #   #          ",
-        "    #$  #          ",
-        "  ### $ ##         ",
-        "  #  $ $ #         ",
-        "### # ## #   ######",
-        "#   # ## #####  ..#",
-        "# $  $          ..#",
-        "##### ### #@##  ..#",
-        "    #     #########",
-        "    #######        "
-    ]
+// ゲームデータ
+const storyData = [
+    {
+        age: "3歳：初めての習い事",
+        img: "🎨",
+        desc: "子供が何かに興味を持ち始めました。何をさせますか？",
+        choices: [
+            { text: "絵画教室に通わせる", stats: { int: 5, str: 0, emot: 15 }, next: 1 },
+            { text: "体操教室に通わせる", stats: { int: 0, str: 15, emot: 5 }, next: 1 },
+            { text: "家で自由に遊ばせる", stats: { int: 5, str: 5, emot: 5 }, next: 1 }
+        ]
+    },
+    {
+        age: "7歳：小学校入学",
+        img: "🏫",
+        desc: "放課後の過ごし方はどうしましょう？",
+        choices: [
+            { text: "塾で猛勉強させる", stats: { int: 20, str: -5, emot: 0 }, next: 2 },
+            { text: "外で暗くなるまで遊ばせる", stats: { int: -5, str: 20, emot: 10 }, next: 2 },
+            { text: "図書館へ一緒に行く", stats: { int: 10, str: 0, emot: 15 }, next: 2 }
+        ]
+    },
+    {
+        age: "15歳：進路相談",
+        img: "✍️",
+        desc: "将来について悩んでいるようです。アドバイスは？",
+        choices: [
+            { text: "安定した公務員を勧める", stats: { int: 15, str: 0, emot: -5 }, next: 3 },
+            { text: "スポーツ推薦で道を開かせる", stats: { int: 0, str: 20, emot: 5 }, next: 3 },
+            { text: "本人の好きなようにさせる", stats: { int: 5, str: 5, emot: 20 }, next: 3 }
+        ]
+    }
 ];
 
-let currentLevel = 0;
-let moves = 0;
-let map = [];
-let playerPos = { r: 0, c: 0 };
+// ステータス
+let stats = { int: 10, str: 10, emot: 10 };
+let currentStep = 0;
 
-function initLevel() {
-    moves = 0;
-    document.getElementById('moves').innerText = moves;
-    document.getElementById('level').innerText = currentLevel + 1;
-    document.getElementById('message').innerText = "";
+function updateUI() {
+    document.getElementById('stat-int').innerText = stats.int;
+    document.getElementById('stat-str').innerText = stats.str;
+    document.getElementById('stat-emot').innerText = stats.emot;
+}
+
+function renderScene(step) {
+    if (step >= storyData.length) {
+        showEnding();
+        return;
+    }
+
+    const data = storyData[step];
+    document.getElementById('age-display').innerText = data.age;
+    document.getElementById('scene-image').innerText = data.img;
+    document.getElementById('description').innerText = data.desc;
     
-    // 文字列配列を2次元配列に変換
-    map = levels[currentLevel].map(row => row.split(''));
-    
-    // プレイヤー位置の特定
-    for(let r=0; r<map.length; r++) {
-        for(let c=0; c<map[r].length; c++) {
-            if(map[r][c] === '@' || map[r][c] === '+') {
-                playerPos = { r, c };
-            }
-        }
-    }
-    draw();
+    const choicesArea = document.getElementById('choices-area');
+    choicesArea.innerHTML = '';
+
+    data.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.className = 'choice-btn';
+        btn.innerText = choice.text;
+        btn.onclick = () => {
+            stats.int += choice.stats.int;
+            stats.str += choice.stats.str;
+            stats.emot += choice.stats.emot;
+            updateUI();
+            renderScene(choice.next);
+        };
+        choicesArea.appendChild(btn);
+    });
 }
 
-function draw() {
-    const board = document.getElementById('game-board');
-    board.innerHTML = '';
-    board.style.gridTemplateColumns = `repeat(${map[0].length}, 50px)`;
+function showEnding() {
+    document.getElementById('age-display').innerText = "22歳：旅立ち";
+    let job = "";
+    let img = "";
 
-    for(let r=0; r<map.length; r++) {
-        for(let c=0; c<map[r].length; c++) {
-            const tile = document.createElement('div');
-            tile.className = 'tile';
-            const char = map[r][c];
-            
-            if(char === '#') tile.classList.add('wall');
-            if(char === '.' || char === '*' || char === '&' || char === '+') tile.classList.add('target');
-            if(char === '$' || char === '&') {
-                tile.innerText = '📦';
-                tile.classList.add('box');
-                if(char === '&') tile.classList.add('box-on-target');
-            }
-            if(char === '@' || char === '+') {
-                tile.innerText = '👤';
-                tile.classList.add('player');
-            }
-            board.appendChild(tile);
-        }
+    // 簡易的なエンディング判定ロジック
+    if (stats.int >= 40) {
+        job = "博識な大学教授になりました。";
+        img = "👨‍🏫";
+    } else if (stats.str >= 40) {
+        job = "世界的なアスリートになりました。";
+        img = "🏃";
+    } else if (stats.emot >= 40) {
+        job = "心優しい芸術家になりました。";
+        img = "🎨";
+    } else {
+        job = "平凡ながら幸せな社会人になりました。";
+        img = "👨‍💼";
     }
-    checkWin();
+
+    document.getElementById('scene-image').innerText = img;
+    document.getElementById('description').innerText = `子供は立派に成長しました！\n\n最終結果：${job}`;
+    document.getElementById('choices-area').innerHTML = '';
+    document.getElementById('restart-btn').style.display = 'block';
 }
 
-function move(dr, dc) {
-    const nr = playerPos.r + dr;
-    const nc = playerPos.c + dc;
-    const target = map[nr][nc];
-
-    // 壁なら動けない
-    if(target === '#') return;
-
-    // 荷物がある場合
-    if(target === '$' || target === '&') {
-        const nnr = nr + dr;
-        const nnc = nc + dc;
-        const nextTarget = map[nnr][nnc];
-
-        // 荷物の先が床か目的地なら押せる
-        if(nextTarget === ' ' || nextTarget === '.') {
-            // 荷物を移動
-            map[nnr][nnc] = nextTarget === '.' ? '&' : '$';
-            // 元の場所を更新
-            map[nr][nc] = target === '&' ? '.' : ' ';
-        } else {
-            return; // 押せない
-        }
-    }
-
-    // プレイヤーの移動
-    const currentChar = map[playerPos.r][playerPos.c];
-    map[playerPos.r][playerPos.c] = (currentChar === '+') ? '.' : ' ';
-    
-    playerPos.r = nr;
-    playerPos.c = nc;
-    map[nr][nc] = (map[nr][nc] === '.' || map[nr][nc] === '&') ? '+' : '@';
-
-    moves++;
-    document.getElementById('moves').innerText = moves;
-    draw();
-}
-
-function checkWin() {
-    // マップ内に $ (目的地にいない荷物) がなくなればクリア
-    const isWin = !map.some(row => row.includes('$'));
-    if(isWin) {
-        document.getElementById('message').innerText = "Level Clear! Press Space for Next.";
-    }
-}
-
-function resetLevel() { initLevel(); }
-
-window.addEventListener('keydown', e => {
-    switch(e.key) {
-        case 'ArrowUp': case 'w': move(-1, 0); break;
-        case 'ArrowDown': case 's': move(1, 0); break;
-        case 'ArrowLeft': case 'a': move(0, -1); break;
-        case 'ArrowRight': case 'd': move(0, 1); break;
-        case 'r': resetLevel(); break;
-        case ' ': 
-            if(!map.some(row => row.includes('$'))) {
-                currentLevel = (currentLevel + 1) % levels.length;
-                initLevel();
-            }
-            break;
-    }
-});
-
-initLevel();
+// 初期実行
+renderScene(0);
 </script>
+
 </body>
 </html>
