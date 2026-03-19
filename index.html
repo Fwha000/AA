@@ -3,438 +3,345 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Undertale-like Battle</title>
+    <title>My Little City Builder</title>
     <style>
-        /* 全体の設定 */
         :root {
-            --bg-color: #000;
-            --text-color: #fff;
-            --border-color: #666;
-            --heart-color: #f00;
-            --box-color: #333;
-            --option-color: #4CAF50; /* 緑 */
-            --font-pixel: 'Press Start 2P', cursive;
+            --bg-color: #2c3e50;
+            --text-color: #ecf0f1;
+            --ui-bg: #34495e;
+            --button-primary: #2ecc71;
+            --button-hover: #27ae60;
+            --button-disabled: #7f8c8d;
+            --tile-grass: #8bc34a;
+            --tile-road: #607d8b;
         }
-
-        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-
         body {
-            margin: 0;
-            font-family: var(--font-pixel);
+            font-family: 'Roboto', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
+            margin: 0;
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
+            justify-content: center;
             min-height: 100vh;
             overflow: hidden;
-            flex-direction: column;
-            user-select: none;
-            text-align: center;
-            font-size: 14px;
         }
-
-        /* ゲームコンテナ */
-        .game-container {
-            width: 90%;
-            max-width: 600px;
-            background-color: var(--box-color);
-            border: 4px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 8px 8px 0px rgba(0,0,0,0.5);
-            position: relative;
+        #game-container {
             display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
-        }
-
-        /* メッセージエリア */
-        .message-box {
-            background-color: #222;
-            border: 2px solid var(--border-color);
-            padding: 10px;
-            min-height: 60px;
-            width: 90%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            font-size: 0.9em;
-        }
-
-        /* バトルエリア (弾幕避け) */
-        .battle-area {
-            width: 250px;
-            height: 180px;
-            background-color: var(--bg-color);
-            border: 3px solid var(--border-color);
-            position: relative;
-            overflow: hidden;
+            gap: 20px;
+            max-width: 1200px;
+            width: 95%;
             margin: 20px auto;
         }
-
-        /* プレイヤーのハート */
-        .player-heart {
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background-color: var(--heart-color);
-            transform: rotate(-45deg);
-            top: calc(50% - 8px);
-            left: calc(50% - 8px);
-        }
-        .player-heart::before, .player-heart::after {
-            content: '';
-            position: absolute;
-            width: 16px;
-            height: 16px;
-            background-color: var(--heart-color);
-            border-radius: 50%;
-        }
-        .player-heart::before {
-            top: -8px;
-            left: 0;
-        }
-        .player-heart::after {
-            top: 0;
-            left: 8px;
-        }
-
-        /* 敵の弾幕 */
-        .bullet {
-            position: absolute;
-            width: 8px;
-            height: 8px;
-            background-color: #fff;
-            border-radius: 50%;
-            animation: bulletFall 2s linear forwards;
-        }
-
-        @keyframes bulletFall {
-            from { transform: translateY(-20px); opacity: 1; }
-            to { transform: translateY(180px); opacity: 0; }
-        }
-
-        /* HPゲージ */
-        .hp-bar-container {
-            width: 90%;
-            background-color: #444;
-            border: 2px solid var(--border-color);
-            height: 15px;
-            margin-top: 10px;
+        #canvas-container {
+            flex-grow: 1;
             position: relative;
+            background-color: #555; /* Fallback */
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
         }
-        .hp-bar {
-            height: 100%;
-            background-color: var(--heart-color);
-            width: 100%; /* 初期値 */
-            transition: width 0.3s ease;
+        canvas {
+            display: block;
+            background-color: var(--tile-grass); /* Default background */
         }
-        .hp-text {
-            position: absolute;
-            top: 50%;
-            left: 10px;
-            transform: translateY(-50%);
-            color: #eee;
-            font-size: 0.8em;
+        #ui-panel {
+            width: 280px;
+            background-color: var(--ui-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
-
-        /* コマンドメニュー */
-        .command-menu {
+        .stats-display {
+            background-color: #293a4a;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            text-align: left;
+        }
+        .stats-display div { margin-bottom: 5px; }
+        .build-menu {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            width: 90%;
-            margin-top: 20px;
         }
-
-        .command-button {
-            background-color: var(--box-color);
-            border: 2px solid var(--border-color);
-            color: var(--text-color);
-            padding: 10px 15px;
-            font-family: var(--font-pixel);
-            font-size: 0.8em;
+        .build-btn {
+            background-color: var(--button-primary);
+            color: white;
+            border: none;
+            padding: 10px 5px;
+            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.1s ease;
-            box-shadow: 3px 3px 0px var(--border-color);
-        }
-        .command-button:hover {
-            background-color: #555;
-            box-shadow: 5px 5px 0px var(--border-color);
-        }
-        .command-button:disabled {
-            background-color: #333;
-            color: #888;
-            cursor: not-allowed;
-            box-shadow: 2px 2px 0px var(--border-color);
-        }
-
-        /* モンスター表示 */
-        .monster-sprite {
-            width: 80px;
-            height: 80px;
-            background-color: #888; /* モンスターの仮色 */
-            border: 2px solid #555;
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            z-index: 10;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 0.8em;
-            color: #fff;
-        }
-
-        /* 勝利/敗北メッセージ */
-        .game-over-screen {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0, 0, 0, 0.8);
-            color: #fff;
+            font-size: 0.9rem;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+            text-align: left;
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            font-size: 2em;
-            z-index: 100;
-            display: none; /* 初期は非表示 */
+            align-items: flex-start;
+            line-height: 1.3;
         }
-        .game-over-screen button {
-            background-color: var(--main-color);
-            border: 2px solid var(--border-color);
-            color: var(--text-color);
-            padding: 15px 30px;
-            font-family: var(--font-pixel);
-            font-size: 0.8em;
-            cursor: pointer;
-            margin-top: 20px;
+        .build-btn:hover:not(:disabled) {
+            background-color: var(--button-hover);
         }
-
-        /* モバイル対応 */
-        @media (max-width: 600px) {
-            body {
-                font-size: 12px;
-            }
-            .game-container {
-                padding: 10px;
-            }
-            .battle-area {
-                width: 200px;
-                height: 150px;
-            }
-            .command-menu {
-                grid-template-columns: 1fr;
-            }
-            .monster-sprite {
-                width: 60px;
-                height: 60px;
-                top: 10px;
-                right: 10px;
-            }
+        .build-btn:disabled {
+            background-color: var(--button-disabled);
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        .build-btn .cost {
+            font-size: 0.75rem;
+            opacity: 0.8;
+            margin-top: 3px;
+        }
+        .selected-building-info {
+            background-color: #45627f;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            font-size: 0.95rem;
+        }
+        .selected-building-info .building-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
+        #message-display {
+            background-color: #f39c12;
+            color: var(--bg-color);
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin-top: 10px;
+            font-weight: bold;
+            display: none;
         }
     </style>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-    <div class="game-container">
-        <div class="monster-sprite">敵</div>
-        <div id="messageBox" class="message-box">
-            奇妙なモンスターが現れた！
-        </div>
-
-        <div class="hp-bar-container">
-            <div id="hpBar" class="hp-bar"></div>
-            <span class="hp-text">HP: <span id="currentHp">20</span>/<span id="maxHp">20</span></span>
-        </div>
-
-        <div id="battleArea" class="battle-area">
-            <div id="playerHeart" class="player-heart"></div>
-        </div>
-
-        <div class="command-menu">
-            <button id="attackButton" class="command-button">たたかう</button>
-            <button id="actButton" class="command-button">こうどう</button>
-            <button id="itemButton" class="command-button">アイテム</button>
-            <button id="mercyButton" class="command-button">みのがす</button>
-        </div>
+<div id="game-container">
+    <div id="canvas-container">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
     </div>
+    
+    <div id="ui-panel">
+        <div class="stats-display">
+            <div>資金: $<span id="money">1000</span></div>
+            <div>時間: <span id="game-time">00:00</span></div>
+            <div>人口: <span id="population">0</span>人</div>
+            <div>幸福度: <span id="happiness">100</span>%</div>
+        </div>
 
-    <div id="gameOverScreen" class="game-over-screen">
-        <p id="gameOverText"></p>
-        <button onclick="location.reload()">もういちど</button>
+        <div class="selected-building-info">
+            <div class="building-name" id="selected-building-name">建物を選んでください</div>
+            <div id="selected-building-cost"></div>
+        </div>
+
+        <div class="build-menu">
+            </div>
+
+        <div id="message-display"></div>
     </div>
+</div>
 
-    <script>
-        const messageBox = document.getElementById('messageBox');
-        const battleArea = document.getElementById('battleArea');
-        const playerHeart = document.getElementById('playerHeart');
-        const hpBar = document.getElementById('hpBar');
-        const currentHpDisplay = document.getElementById('currentHp');
-        const maxHpDisplay = document.getElementById('maxHp');
-        const gameOverScreen = document.getElementById('gameOverScreen');
-        const gameOverText = document.getElementById('gameOverText');
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-        const attackButton = document.getElementById('attackButton');
-        const actButton = document.getElementById('actButton');
-        const itemButton = document.getElementById('itemButton');
-        const mercyButton = document.getElementById('mercyButton');
+// UI要素の取得
+const moneyDisplay = document.getElementById('money');
+const timeDisplay = document.getElementById('game-time');
+const populationDisplay = document.getElementById('population');
+const happinessDisplay = document.getElementById('happiness');
+const selectedBuildingName = document.getElementById('selected-building-name');
+const selectedBuildingCost = document.getElementById('selected-building-cost');
+const buildMenu = document.querySelector('.build-menu');
+const messageDisplay = document.getElementById('message-display');
 
-        let playerHp = 20;
-        const maxPlayerHp = 20;
-        let monsterHp = 10; // モンスターのHP (倒すことも可能に)
-        let monsterMercy = 0; // モンスターを見逃すためのポイント
-        let gameActive = true;
-        let bulletInterval;
+// --- ゲーム設定 ---
+const TILE_SIZE = 40;
+const GRID_WIDTH = canvas.width / TILE_SIZE;
+const GRID_HEIGHT = canvas.height / TILE_SIZE;
+const GAME_SPEED_MS = 1000; // 1秒 = 1ゲーム分
+const MONEY_TICK_INTERVAL_MS = 3000; // 3秒ごとに収入計算
 
-        const battleAreaRect = battleArea.getBoundingClientRect();
-        let heartX = battleAreaRect.width / 2 - 8;
-        let heartY = battleAreaRect.height / 2 - 8;
+// --- ゲームステータス ---
+let money = 1000;
+let gameTime = 0; // 秒数で管理
+let population = 0;
+let happiness = 100;
+let grid = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null)); // null = 空き地
+let selectedBuildingType = null;
 
-        playerHeart.style.left = heartX + 'px';
-        playerHeart.style.top = heartY + 'px';
+// --- 建物データ ---
+const BUILDINGS = {
+    'grass': { name: '草地', cost: 0, income: 0, population: 0, happiness: 0, color: '#8bc34a', emoji: '🌿' },
+    'road': { name: '道路', cost: 5, income: 0, population: 0, happiness: 5, color: '#607d8b', emoji: '🛣️' },
+    'house': { name: '家', cost: 50, income: 2, population: 5, happiness: 10, color: '#e74c3c', emoji: '🏠' },
+    'shop': { name: '店', cost: 100, income: 10, population: 2, happiness: 5, color: '#f39c12', emoji: '🏬' },
+    'park': { name: '公園', cost: 70, income: -1, population: 0, happiness: 20, color: '#2ecc71', emoji: '🌳' },
+    'factory': { name: '工場', cost: 200, income: 25, population: 10, happiness: -15, color: '#7f8c8d', emoji: '🏭' },
+    'hospital': { name: '病院', cost: 150, income: -5, population: 0, happiness: 30, color: '#9b59b6', emoji: '🏥' },
+    'tower': { name: 'タワー', cost: 500, income: 50, population: 20, happiness: 40, color: '#3498db', emoji: '🗼' }
+};
 
-        // HPバーの更新
-        function updateHpDisplay() {
-            hpBar.style.width = (playerHp / maxPlayerHp) * 100 + '%';
-            currentHpDisplay.textContent = playerHp;
+// --- 初期化 ---
+function initGame() {
+    // グリッドを草地で埋める
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+        for (let c = 0; c < GRID_WIDTH; c++) {
+            grid[r][c] = { type: 'grass', ...BUILDINGS['grass'] };
         }
+    }
+    drawGrid();
+    updateUI();
+    
+    // 建物選択メニューの生成
+    for (const type in BUILDINGS) {
+        if (type === 'grass') continue; // 草地は建設メニューに表示しない
+        const building = BUILDINGS[type];
+        const button = document.createElement('button');
+        button.className = 'build-btn';
+        button.dataset.type = type;
+        button.innerHTML = `${building.emoji} ${building.name} <span class="cost">($${building.cost})</span>`;
+        button.addEventListener('click', () => selectBuilding(type));
+        buildMenu.appendChild(button);
+    }
 
-        // ゲームオーバー処理
-        function gameOver(message, isVictory = false) {
-            gameActive = false;
-            clearInterval(bulletInterval);
-            document.removeEventListener('keydown', handleKeyPress);
-            gameOverText.textContent = message;
-            gameOverScreen.style.display = 'flex';
+    // ゲームループ開始
+    setInterval(gameTick, GAME_SPEED_MS);
+    setInterval(moneyTick, MONEY_TICK_INTERVAL_MS);
+}
 
-            // コマンドボタンを無効化
-            attackButton.disabled = true;
-            actButton.disabled = true;
-            itemButton.disabled = true;
-            mercyButton.disabled = true;
+// --- 描画関連 ---
+function drawGrid() {
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+        for (let c = 0; c < GRID_WIDTH; c++) {
+            const building = grid[r][c];
+            ctx.fillStyle = building.color;
+            ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            
+            // 建物アイコン（絵文字）の描画
+            ctx.font = `${TILE_SIZE * 0.7}px Arial`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(building.emoji, c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2);
         }
+    }
+}
 
-        // 弾幕生成
-        function spawnBullet() {
-            if (!gameActive) return;
+// --- UI更新 ---
+function updateUI() {
+    moneyDisplay.innerText = money;
+    const minutes = Math.floor(gameTime / 60).toString().padStart(2, '0');
+    const seconds = (gameTime % 60).toString().padStart(2, '0');
+    timeDisplay.innerText = `${minutes}:${seconds}`;
 
-            const bullet = document.createElement('div');
-            bullet.classList.add('bullet');
-            // 弾の生成位置をランダムにする
-            bullet.style.left = Math.random() * (battleAreaRect.width - 8) + 'px';
-            battleArea.appendChild(bullet);
-
-            bullet.addEventListener('animationend', () => {
-                bullet.remove();
-            });
-
-            // 弾とハートの当たり判定
-            const checkCollision = setInterval(() => {
-                if (!gameActive) {
-                    clearInterval(checkCollision);
-                    return;
-                }
-                const bulletRect = bullet.getBoundingClientRect();
-                const heartRect = playerHeart.getBoundingClientRect();
-
-                // 弾がハートの領域内にあるか
-                if (
-                    bulletRect.left < heartRect.right &&
-                    bulletRect.right > heartRect.left &&
-                    bulletRect.top < heartRect.bottom &&
-                    bulletRect.bottom > heartRect.top
-                ) {
-                    playerHp--;
-                    updateHpDisplay();
-                    bullet.remove(); // 弾が当たったら消す
-                    clearInterval(checkCollision);
-
-                    if (playerHp <= 0) {
-                        gameOver('ゲームオーバー...');
-                    }
-                }
-            }, 50); // 50msごとに当たり判定をチェック
+    let totalPopulation = 0;
+    let totalHappiness = 0;
+    let buildingCount = 0;
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+        for (let c = 0; c < GRID_WIDTH; c++) {
+            if (grid[r][c].type !== 'grass') {
+                totalPopulation += grid[r][c].population;
+                totalHappiness += grid[r][c].happiness;
+                buildingCount++;
+            }
         }
+    }
+    population = totalPopulation;
+    happiness = Math.min(100, Math.max(0, 100 + Math.floor(totalHappiness / Math.max(1, buildingCount)))); // 基本100%から建物の影響
+    
+    populationDisplay.innerText = population;
+    happinessDisplay.innerText = happiness;
 
-        // ハートの移動 (キーボード操作)
-        const heartSpeed = 5;
-        const handleKeyPress = (e) => {
-            if (!gameActive) return;
+    // 建設ボタンの有効/無効
+    document.querySelectorAll('.build-btn').forEach(btn => {
+        const type = btn.dataset.type;
+        btn.disabled = money < BUILDINGS[type].cost;
+    });
+}
 
-            const battleAreaBounds = battleArea.getBoundingClientRect();
-            const heartBounds = playerHeart.getBoundingClientRect();
+// --- メッセージ表示 ---
+function showMessage(msg, duration = 2000) {
+    messageDisplay.innerText = msg;
+    messageDisplay.style.display = 'block';
+    setTimeout(() => {
+        messageDisplay.style.display = 'none';
+    }, duration);
+}
 
-            switch (e.key) {
-                case 'ArrowUp':
-                    heartY = Math.max(0, heartY - heartSpeed);
-                    break;
-                case 'ArrowDown':
-                    heartY = Math.min(battleAreaBounds.height - heartBounds.height, heartY + heartSpeed);
-                    break;
-                case 'ArrowLeft':
-                    heartX = Math.max(0, heartX - heartSpeed);
-                    break;
-                case 'ArrowRight':
-                    heartX = Math.min(battleAreaBounds.width - heartBounds.width, heartX + heartSpeed);
-                    break;
-            }
-            playerHeart.style.left = heartX + 'px';
-            playerHeart.style.top = heartY + 'px';
-        };
-        document.addEventListener('keydown', handleKeyPress);
+// --- 建物選択 ---
+function selectBuilding(type) {
+    selectedBuildingType = type;
+    const building = BUILDINGS[type];
+    selectedBuildingName.innerText = `${building.emoji} ${building.name}`;
+    selectedBuildingCost.innerText = `コスト: $${building.cost}`;
+}
 
-        // コマンドボタンのイベントリスナー
-        attackButton.addEventListener('click', () => {
-            if (!gameActive) return;
-            messageBox.textContent = 'プレイヤーはモンスターにダメージを与えた！';
-            monsterHp -= 3; // 仮のダメージ
-            if (monsterHp <= 0) {
-                gameOver('モンスターを倒した！', true);
-            }
-        });
+// --- マップクリック処理 ---
+canvas.addEventListener('click', (event) => {
+    if (!selectedBuildingType) {
+        showMessage("先に建物の種類を選んでください！", 1500);
+        return;
+    }
 
-        actButton.addEventListener('click', () => {
-            if (!gameActive) return;
-            // 行動選択の例
-            messageBox.textContent = 'プレイヤーはモンスターに話しかけた。モンスターは少し困惑している。';
-            monsterMercy += 1; // 見逃すためのポイントを増やす
-        });
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
 
-        itemButton.addEventListener('click', () => {
-            if (!gameActive) return;
-            if (playerHp < maxPlayerHp) {
-                messageBox.textContent = 'プレイヤーは回復アイテムを使った。HPが回復した！';
-                playerHp = Math.min(maxPlayerHp, playerHp + 5); // 仮の回復量
-                updateHpDisplay();
-            } else {
-                messageBox.textContent = 'HPは満タンだ。';
-            }
-        });
+    const col = Math.floor(x / TILE_SIZE);
+    const row = Math.floor(y / TILE_SIZE);
 
-        mercyButton.addEventListener('click', () => {
-            if (!gameActive) return;
-            if (monsterMercy >= 3) { // 3回行動したら見逃せる
-                gameOver('モンスターを見逃した！平和な解決だ。', true);
-            } else {
-                messageBox.textContent = 'まだ見逃すことができないようだ...。';
-            }
-        });
+    if (row >= 0 && row < GRID_HEIGHT && col >= 0 && col < GRID_WIDTH) {
+        const buildingToBuild = BUILDINGS[selectedBuildingType];
 
-        // ゲーム開始
-        updateHpDisplay();
-        bulletInterval = setInterval(spawnBullet, 500); // 0.5秒ごとに弾を生成
+        if (money >= buildingToBuild.cost) {
+            money -= buildingToBuild.cost;
+            grid[row][col] = { type: selectedBuildingType, ...buildingToBuild };
+            drawGrid();
+            updateUI();
+            selectedBuildingType = null; // 建設後選択解除
+            selectedBuildingName.innerText = "建物を選んでください";
+            selectedBuildingCost.innerText = "";
+            showMessage(`${buildingToBuild.name}を建設しました！`, 1500);
+        } else {
+            showMessage("資金が足りません！", 1500);
+        }
+    }
+});
 
-        // 初期メッセージ
-        setTimeout(() => {
-            messageBox.textContent = 'モンスターはあなたを見ている。';
-        }, 1500);
-    </script>
+// --- ゲームの時間進行 ---
+function gameTick() {
+    gameTime++;
+    updateUI();
+}
+
+// --- 定期的な収入・支出計算 ---
+function moneyTick() {
+    let income = 0;
+    let expense = 0;
+    for (let r = 0; r < GRID_HEIGHT; r++) {
+        for (let c = 0; c < GRID_WIDTH; c++) {
+            const building = grid[r][c];
+            income += building.income;
+        }
+    }
+    
+    // 人口や幸福度による補正
+    income = Math.floor(income * (1 + (population / 1000)) * (happiness / 100));
+
+    money += income;
+    
+    // 施設の維持費やランダムイベントなどもここで追加可能
+    
+    updateUI();
+}
+
+// --- ゲーム開始 ---
+initGame();
+</script>
 </body>
 </html>
