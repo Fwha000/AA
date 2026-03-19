@@ -2,346 +2,191 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Little City Builder</title>
+    <title>Logic Box Solver - Puzzle Game</title>
     <style>
-        :root {
-            --bg-color: #2c3e50;
-            --text-color: #ecf0f1;
-            --ui-bg: #34495e;
-            --button-primary: #2ecc71;
-            --button-hover: #27ae60;
-            --button-disabled: #7f8c8d;
-            --tile-grass: #8bc34a;
-            --tile-road: #607d8b;
-        }
-        body {
-            font-family: 'Roboto', sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            overflow: hidden;
-        }
-        #game-container {
-            display: flex;
-            gap: 20px;
-            max-width: 1200px;
-            width: 95%;
-            margin: 20px auto;
-        }
-        #canvas-container {
-            flex-grow: 1;
-            position: relative;
-            background-color: #555; /* Fallback */
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-        }
-        canvas {
-            display: block;
-            background-color: var(--tile-grass); /* Default background */
-        }
-        #ui-panel {
-            width: 280px;
-            background-color: var(--ui-bg);
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 8px 20px rgba(0,0,0,0.3);
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-        .stats-display {
-            background-color: #293a4a;
-            padding: 15px;
-            border-radius: 6px;
-            font-size: 1.1rem;
-            line-height: 1.5;
-            text-align: left;
-        }
-        .stats-display div { margin-bottom: 5px; }
-        .build-menu {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .build-btn {
-            background-color: var(--button-primary);
-            color: white;
-            border: none;
-            padding: 10px 5px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: bold;
-            transition: background-color 0.2s ease;
-            text-align: left;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-start;
-            line-height: 1.3;
-        }
-        .build-btn:hover:not(:disabled) {
-            background-color: var(--button-hover);
-        }
-        .build-btn:disabled {
-            background-color: var(--button-disabled);
-            cursor: not-allowed;
-            opacity: 0.7;
-        }
-        .build-btn .cost {
-            font-size: 0.75rem;
-            opacity: 0.8;
-            margin-top: 3px;
-        }
-        .selected-building-info {
-            background-color: #45627f;
-            padding: 10px;
-            border-radius: 6px;
-            text-align: center;
-            font-size: 0.95rem;
-        }
-        .selected-building-info .building-name { font-weight: bold; font-size: 1.1rem; margin-bottom: 5px; }
-        #message-display {
-            background-color: #f39c12;
-            color: var(--bg-color);
-            padding: 10px 20px;
-            border-radius: 6px;
-            margin-top: 10px;
-            font-weight: bold;
-            display: none;
-        }
+        :root { --bg: #2c3e50; --wall: #34495e; --floor: #ecf0f1; --box: #f39c12; --target: #2ecc71; --player: #3498db; }
+        body { background: var(--bg); color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; margin: 0; padding: 20px; }
+        .stats { margin-bottom: 10px; font-size: 1.2rem; }
+        #game-board { display: grid; background: var(--wall); border: 4px solid var(--wall); gap: 1px; }
+        .tile { width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; font-size: 2rem; background: var(--floor); }
+        .wall { background: var(--wall); }
+        .target { background: #d5f5e3; position: relative; }
+        .target::after { content: '🎯'; font-size: 1.2rem; opacity: 0.5; }
+        .box { background: var(--box); border-radius: 5px; z-index: 1; }
+        .player { background: var(--player); border-radius: 50%; z-index: 2; transition: all 0.1s; }
+        .box-on-target { background: #27ae60; box-shadow: inset 0 0 10px rgba(0,0,0,0.3); }
+        .controls { margin-top: 20px; color: #bdc3c7; text-align: center; }
+        .btn { padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
-<div id="game-container">
-    <div id="canvas-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-    </div>
+    <h1>Logic Box Solver</h1>
+    <div class="stats">Level: <span id="level">1</span> | Moves: <span id="moves">0</span></div>
     
-    <div id="ui-panel">
-        <div class="stats-display">
-            <div>資金: $<span id="money">1000</span></div>
-            <div>時間: <span id="game-time">00:00</span></div>
-            <div>人口: <span id="population">0</span>人</div>
-            <div>幸福度: <span id="happiness">100</span>%</div>
-        </div>
+    <div id="game-board"></div>
 
-        <div class="selected-building-info">
-            <div class="building-name" id="selected-building-name">建物を選んでください</div>
-            <div id="selected-building-cost"></div>
-        </div>
-
-        <div class="build-menu">
-            </div>
-
-        <div id="message-display"></div>
+    <div class="controls">
+        <p>十字キー または WASD で移動</p>
+        <button class="btn" onclick="resetLevel()">リセット (R)</button>
+        <p id="message"></p>
     </div>
-</div>
 
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// マップ記号: #=壁, .=床, @=プレイヤー, $=荷物, *=目的地, +=目的地上のプレイヤー, &=目的地上の荷物
+const levels = [
+    [
+        "  ##### ",
+        "###   # ",
+        "#.@$  # ",
+        "### $.# ",
+        "#.# $ # ",
+        "# # . # ",
+        "#   ### ",
+        "#####   "
+    ],
+    [
+        " #####  ",
+        " #   #  ",
+        " #$  #  ",
+        "### $## ",
+        "#  $  # ",
+        "# . . # ",
+        "####### "
+    ],
+    [
+        "    #####          ",
+        "    #   #          ",
+        "    #$  #          ",
+        "  ### $ ##         ",
+        "  #  $ $ #         ",
+        "### # ## #   ######",
+        "#   # ## #####  ..#",
+        "# $  $          ..#",
+        "##### ### #@##  ..#",
+        "    #     #########",
+        "    #######        "
+    ]
+];
 
-// UI要素の取得
-const moneyDisplay = document.getElementById('money');
-const timeDisplay = document.getElementById('game-time');
-const populationDisplay = document.getElementById('population');
-const happinessDisplay = document.getElementById('happiness');
-const selectedBuildingName = document.getElementById('selected-building-name');
-const selectedBuildingCost = document.getElementById('selected-building-cost');
-const buildMenu = document.querySelector('.build-menu');
-const messageDisplay = document.getElementById('message-display');
+let currentLevel = 0;
+let moves = 0;
+let map = [];
+let playerPos = { r: 0, c: 0 };
 
-// --- ゲーム設定 ---
-const TILE_SIZE = 40;
-const GRID_WIDTH = canvas.width / TILE_SIZE;
-const GRID_HEIGHT = canvas.height / TILE_SIZE;
-const GAME_SPEED_MS = 1000; // 1秒 = 1ゲーム分
-const MONEY_TICK_INTERVAL_MS = 3000; // 3秒ごとに収入計算
-
-// --- ゲームステータス ---
-let money = 1000;
-let gameTime = 0; // 秒数で管理
-let population = 0;
-let happiness = 100;
-let grid = Array(GRID_HEIGHT).fill(null).map(() => Array(GRID_WIDTH).fill(null)); // null = 空き地
-let selectedBuildingType = null;
-
-// --- 建物データ ---
-const BUILDINGS = {
-    'grass': { name: '草地', cost: 0, income: 0, population: 0, happiness: 0, color: '#8bc34a', emoji: '🌿' },
-    'road': { name: '道路', cost: 5, income: 0, population: 0, happiness: 5, color: '#607d8b', emoji: '🛣️' },
-    'house': { name: '家', cost: 50, income: 2, population: 5, happiness: 10, color: '#e74c3c', emoji: '🏠' },
-    'shop': { name: '店', cost: 100, income: 10, population: 2, happiness: 5, color: '#f39c12', emoji: '🏬' },
-    'park': { name: '公園', cost: 70, income: -1, population: 0, happiness: 20, color: '#2ecc71', emoji: '🌳' },
-    'factory': { name: '工場', cost: 200, income: 25, population: 10, happiness: -15, color: '#7f8c8d', emoji: '🏭' },
-    'hospital': { name: '病院', cost: 150, income: -5, population: 0, happiness: 30, color: '#9b59b6', emoji: '🏥' },
-    'tower': { name: 'タワー', cost: 500, income: 50, population: 20, happiness: 40, color: '#3498db', emoji: '🗼' }
-};
-
-// --- 初期化 ---
-function initGame() {
-    // グリッドを草地で埋める
-    for (let r = 0; r < GRID_HEIGHT; r++) {
-        for (let c = 0; c < GRID_WIDTH; c++) {
-            grid[r][c] = { type: 'grass', ...BUILDINGS['grass'] };
-        }
-    }
-    drawGrid();
-    updateUI();
+function initLevel() {
+    moves = 0;
+    document.getElementById('moves').innerText = moves;
+    document.getElementById('level').innerText = currentLevel + 1;
+    document.getElementById('message').innerText = "";
     
-    // 建物選択メニューの生成
-    for (const type in BUILDINGS) {
-        if (type === 'grass') continue; // 草地は建設メニューに表示しない
-        const building = BUILDINGS[type];
-        const button = document.createElement('button');
-        button.className = 'build-btn';
-        button.dataset.type = type;
-        button.innerHTML = `${building.emoji} ${building.name} <span class="cost">($${building.cost})</span>`;
-        button.addEventListener('click', () => selectBuilding(type));
-        buildMenu.appendChild(button);
-    }
-
-    // ゲームループ開始
-    setInterval(gameTick, GAME_SPEED_MS);
-    setInterval(moneyTick, MONEY_TICK_INTERVAL_MS);
-}
-
-// --- 描画関連 ---
-function drawGrid() {
-    for (let r = 0; r < GRID_HEIGHT; r++) {
-        for (let c = 0; c < GRID_WIDTH; c++) {
-            const building = grid[r][c];
-            ctx.fillStyle = building.color;
-            ctx.fillRect(c * TILE_SIZE, r * TILE_SIZE, TILE_SIZE, TILE_SIZE);
-            
-            // 建物アイコン（絵文字）の描画
-            ctx.font = `${TILE_SIZE * 0.7}px Arial`;
-            ctx.textAlign = 'center';
-            ctx.textBaseline = 'middle';
-            ctx.fillText(building.emoji, c * TILE_SIZE + TILE_SIZE / 2, r * TILE_SIZE + TILE_SIZE / 2);
-        }
-    }
-}
-
-// --- UI更新 ---
-function updateUI() {
-    moneyDisplay.innerText = money;
-    const minutes = Math.floor(gameTime / 60).toString().padStart(2, '0');
-    const seconds = (gameTime % 60).toString().padStart(2, '0');
-    timeDisplay.innerText = `${minutes}:${seconds}`;
-
-    let totalPopulation = 0;
-    let totalHappiness = 0;
-    let buildingCount = 0;
-    for (let r = 0; r < GRID_HEIGHT; r++) {
-        for (let c = 0; c < GRID_WIDTH; c++) {
-            if (grid[r][c].type !== 'grass') {
-                totalPopulation += grid[r][c].population;
-                totalHappiness += grid[r][c].happiness;
-                buildingCount++;
+    // 文字列配列を2次元配列に変換
+    map = levels[currentLevel].map(row => row.split(''));
+    
+    // プレイヤー位置の特定
+    for(let r=0; r<map.length; r++) {
+        for(let c=0; c<map[r].length; c++) {
+            if(map[r][c] === '@' || map[r][c] === '+') {
+                playerPos = { r, c };
             }
         }
     }
-    population = totalPopulation;
-    happiness = Math.min(100, Math.max(0, 100 + Math.floor(totalHappiness / Math.max(1, buildingCount)))); // 基本100%から建物の影響
-    
-    populationDisplay.innerText = population;
-    happinessDisplay.innerText = happiness;
-
-    // 建設ボタンの有効/無効
-    document.querySelectorAll('.build-btn').forEach(btn => {
-        const type = btn.dataset.type;
-        btn.disabled = money < BUILDINGS[type].cost;
-    });
+    draw();
 }
 
-// --- メッセージ表示 ---
-function showMessage(msg, duration = 2000) {
-    messageDisplay.innerText = msg;
-    messageDisplay.style.display = 'block';
-    setTimeout(() => {
-        messageDisplay.style.display = 'none';
-    }, duration);
+function draw() {
+    const board = document.getElementById('game-board');
+    board.innerHTML = '';
+    board.style.gridTemplateColumns = `repeat(${map[0].length}, 50px)`;
+
+    for(let r=0; r<map.length; r++) {
+        for(let c=0; c<map[r].length; c++) {
+            const tile = document.createElement('div');
+            tile.className = 'tile';
+            const char = map[r][c];
+            
+            if(char === '#') tile.classList.add('wall');
+            if(char === '.' || char === '*' || char === '&' || char === '+') tile.classList.add('target');
+            if(char === '$' || char === '&') {
+                tile.innerText = '📦';
+                tile.classList.add('box');
+                if(char === '&') tile.classList.add('box-on-target');
+            }
+            if(char === '@' || char === '+') {
+                tile.innerText = '👤';
+                tile.classList.add('player');
+            }
+            board.appendChild(tile);
+        }
+    }
+    checkWin();
 }
 
-// --- 建物選択 ---
-function selectBuilding(type) {
-    selectedBuildingType = type;
-    const building = BUILDINGS[type];
-    selectedBuildingName.innerText = `${building.emoji} ${building.name}`;
-    selectedBuildingCost.innerText = `コスト: $${building.cost}`;
-}
+function move(dr, dc) {
+    const nr = playerPos.r + dr;
+    const nc = playerPos.c + dc;
+    const target = map[nr][nc];
 
-// --- マップクリック処理 ---
-canvas.addEventListener('click', (event) => {
-    if (!selectedBuildingType) {
-        showMessage("先に建物の種類を選んでください！", 1500);
-        return;
+    // 壁なら動けない
+    if(target === '#') return;
+
+    // 荷物がある場合
+    if(target === '$' || target === '&') {
+        const nnr = nr + dr;
+        const nnc = nc + dc;
+        const nextTarget = map[nnr][nnc];
+
+        // 荷物の先が床か目的地なら押せる
+        if(nextTarget === ' ' || nextTarget === '.') {
+            // 荷物を移動
+            map[nnr][nnc] = nextTarget === '.' ? '&' : '$';
+            // 元の場所を更新
+            map[nr][nc] = target === '&' ? '.' : ' ';
+        } else {
+            return; // 押せない
+        }
     }
 
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+    // プレイヤーの移動
+    const currentChar = map[playerPos.r][playerPos.c];
+    map[playerPos.r][playerPos.c] = (currentChar === '+') ? '.' : ' ';
+    
+    playerPos.r = nr;
+    playerPos.c = nc;
+    map[nr][nc] = (map[nr][nc] === '.' || map[nr][nc] === '&') ? '+' : '@';
 
-    const col = Math.floor(x / TILE_SIZE);
-    const row = Math.floor(y / TILE_SIZE);
+    moves++;
+    document.getElementById('moves').innerText = moves;
+    draw();
+}
 
-    if (row >= 0 && row < GRID_HEIGHT && col >= 0 && col < GRID_WIDTH) {
-        const buildingToBuild = BUILDINGS[selectedBuildingType];
+function checkWin() {
+    // マップ内に $ (目的地にいない荷物) がなくなればクリア
+    const isWin = !map.some(row => row.includes('$'));
+    if(isWin) {
+        document.getElementById('message').innerText = "Level Clear! Press Space for Next.";
+    }
+}
 
-        if (money >= buildingToBuild.cost) {
-            money -= buildingToBuild.cost;
-            grid[row][col] = { type: selectedBuildingType, ...buildingToBuild };
-            drawGrid();
-            updateUI();
-            selectedBuildingType = null; // 建設後選択解除
-            selectedBuildingName.innerText = "建物を選んでください";
-            selectedBuildingCost.innerText = "";
-            showMessage(`${buildingToBuild.name}を建設しました！`, 1500);
-        } else {
-            showMessage("資金が足りません！", 1500);
-        }
+function resetLevel() { initLevel(); }
+
+window.addEventListener('keydown', e => {
+    switch(e.key) {
+        case 'ArrowUp': case 'w': move(-1, 0); break;
+        case 'ArrowDown': case 's': move(1, 0); break;
+        case 'ArrowLeft': case 'a': move(0, -1); break;
+        case 'ArrowRight': case 'd': move(0, 1); break;
+        case 'r': resetLevel(); break;
+        case ' ': 
+            if(!map.some(row => row.includes('$'))) {
+                currentLevel = (currentLevel + 1) % levels.length;
+                initLevel();
+            }
+            break;
     }
 });
 
-// --- ゲームの時間進行 ---
-function gameTick() {
-    gameTime++;
-    updateUI();
-}
-
-// --- 定期的な収入・支出計算 ---
-function moneyTick() {
-    let income = 0;
-    let expense = 0;
-    for (let r = 0; r < GRID_HEIGHT; r++) {
-        for (let c = 0; c < GRID_WIDTH; c++) {
-            const building = grid[r][c];
-            income += building.income;
-        }
-    }
-    
-    // 人口や幸福度による補正
-    income = Math.floor(income * (1 + (population / 1000)) * (happiness / 100));
-
-    money += income;
-    
-    // 施設の維持費やランダムイベントなどもここで追加可能
-    
-    updateUI();
-}
-
-// --- ゲーム開始 ---
-initGame();
+initLevel();
 </script>
 </body>
 </html>
